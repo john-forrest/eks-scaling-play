@@ -17,17 +17,14 @@ spec:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
               - matchExpressions:
-                  - key: "nginx-application"
+                  - key: "application"
                     operator: In
                     values:
-                      - "true"
+                      - "nginx"
       tolerations:
-      # - key: "nginx-application"
-        # operator: "Equal"
-        # value: "true"
-        # effect: "NoSchedule"
-      - key: "nginx-application"
-        operator: "Exists"
+      - key: "application"
+        operator: "Equal"
+        value: "nginx"
         effect: "NoSchedule"
       containers:
       - name: php-apache

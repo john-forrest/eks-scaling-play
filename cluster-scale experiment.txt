@@ -46,5 +46,25 @@ helm install autosc-release autoscaler/cluster-autoscaler \
 
 kubectl apply -f hpa-php-apache.yaml
 (when we did orig, just with toleration and not affinity, it ran the first pod on ng-default.
-Added affinity at which point it said it did not have a valid node to run on. Need to try
-increasing the min ng-
+Added affinity at which point it said it did not have a valid node to run on. Ended up disabling
+taing on the nodegroup)
+
+Run:
+kubectl get hpa
+Wait until the pod Target CPU stops showing "unknown"
+
+Then do the:
+    kubectl run -i --tty --rm load-generator --image=busybox sh
+    while sleep 0.01; do wget -q -O- http://php-apache; done
+
+kubectl get hpa
+kubectl get nodes -l application=nginx
+kubectl get pods -l run=php-apache
+eksctl get nodegroup --cluster eksctl-test
+(Eventually settle down with 4 php-apache nodes and 2 of the app/ng-application pods)
+
+Cntrl-C the busybox
+hpa usage should drop to 0%
+Eventually number of pods should drop to 1
+Wait 10 min or so
+The number of app nodes will also drop to 1
