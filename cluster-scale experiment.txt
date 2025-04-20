@@ -41,7 +41,9 @@ eksctl create nodegroup -f eks-create-app-ng.yml
 
 helm repo add autoscaler https://kubernetes.github.io/autoscaler
 helm upgrade --install autosc-release autoscaler/cluster-autoscaler \
-    --set 'autoDiscovery.clusterName'=eksctl-test
+    --namespace kube-system \
+    --set 'autoDiscovery.clusterName=eksctl-test' \
+    --set awsRegion=eu-west-2
 
 kubectl apply -f hpa-php-apache.yaml
 (when we did orig, just with toleration and not affinity, it ran the first pod on ng-default.
