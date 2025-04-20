@@ -1,0 +1,28 @@
+--- 
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: eksctl-test
+  region: eu-west-2
+
+managedNodeGroups:
+  - name: ng-application
+    instanceType: t3.micro
+    iam:
+      withAddonPolicies:
+        autoScaler: true
+    minSize: 1
+    maxSize: 10
+    desiredCapacity: 1
+    taints:
+      - key: nginx-application
+        value: "true"
+        effect: NoExecute
+    labels:
+      nginx-application: "true"
+    tags:
+      k8s.io/cluster-autoscaler/enabled: "true"
+      k8s.io/cluster-autoscaler/eksctl-test: "true"
+      k8s.io/cluster-autoscaler/node-template/label/nginx-application: "true"
+      k8s.io/cluster-autoscaler/node-template/taint/nginx-application: "true:NoExecute"
