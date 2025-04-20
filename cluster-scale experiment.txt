@@ -33,17 +33,18 @@ be at least "small" - so use t3.small. Make "managed" for good measure but not s
 Possible script
 ---------------
 
-eksctl create cluster --name eksctl-test --nodegroup-name ng-default --node-type t3.small --nodes 2 --managed
-(don't use config file because that creates two cloudformation jobs and the delete does not work)
+eksctl create cluster --name eksctl-test --nodegroup-name ng-default --node-type t3.small --nodes 2 --managed --asg-access
+(don't use config file because that creates two cloudformation jobs and the delete does not work.
+Note --asg-access required to run autoscaler on ng-default)
 eksctl create nodegroup -f eks-create-app-ng.yml
 (note min size set to 0 and desired size to 1 - we want a node to start with as that forms the template,
-otherwise we need to add extra node-template labels to the nodegroup.
+otherwise we need to add extra node-template labels to the nodegroup. TEMP SET MIN SIZE TO 1 UNTIL WORKING)
 
 helm repo add autoscaler https://kubernetes.github.io/autoscaler
 helm install autosc-release autoscaler/cluster-autoscaler \
     --set 'autoDiscovery.clusterName'=eksctl-test
 
-        status code: 403, request id: cf498e20-b6e8-4d4d-8139-1829716246c6
-F0410 22:59:36.344254       1 aws_cloud_provider.go:466] Failed to create AWS Manager: AccessDenied: User: arn:aws:sts::288580320153:assumed-role/eksctl-eksctl-test-nodegroup
--ng-de-NodeInstanceRole-4hYTyI4M3gRK/i-0df1d6cd6c4ec2e3e is not authorized to perform: autoscaling:DescribeAutoScalingGroups because no identity-based policy allows the autos
-caling:DescribeAutoScalingGroups action
+kubectl apply -f hpa-php-apache.yaml
+(when we did orig, just with toleration and not affinity, it ran the first pod on ng-default.
+Added affinity at which point it said it did not have a valid node to run on. Need to try
+increasing the min ng-
