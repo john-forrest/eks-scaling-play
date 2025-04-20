@@ -37,11 +37,10 @@ eksctl create cluster --name eksctl-test --nodegroup-name ng-default --node-type
 (don't use config file because that creates two cloudformation jobs and the delete does not work.
 Note --asg-access required to run autoscaler on ng-default)
 eksctl create nodegroup -f eks-create-app-ng.yml
-(note min size set to 0 and desired size to 1 - we want a node to start with as that forms the template,
-otherwise we need to add extra node-template labels to the nodegroup. TEMP SET MIN SIZE TO 1 UNTIL WORKING)
+(Note min and desired size are 0, so should be no nodes until we create the application pods)
 
 helm repo add autoscaler https://kubernetes.github.io/autoscaler
-helm install autosc-release autoscaler/cluster-autoscaler \
+helm upgrade --install autosc-release autoscaler/cluster-autoscaler \
     --set 'autoDiscovery.clusterName'=eksctl-test
 
 kubectl apply -f hpa-php-apache.yaml

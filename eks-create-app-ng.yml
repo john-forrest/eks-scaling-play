@@ -12,9 +12,9 @@ managedNodeGroups:
     iam:
       withAddonPolicies:
         autoScaler: true
-    minSize: 1
+    minSize: 0
     maxSize: 10
-    desiredCapacity: 1
+    desiredCapacity: 0
     # comment out taints since having trouble getting to work
     #taints:
     #  - key: application
