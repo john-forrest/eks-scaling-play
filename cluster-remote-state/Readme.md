@@ -12,6 +12,9 @@ bucket - we can use different keys to distinguish the different deployments.
 The approach used is partly based on the scheme 
 [here](https://github.com/john-forrest/aws-get-started-terraform/tree/initial/0a-pizza-networking-remote-state).
 
+However since that was done, AWS has deprecated the use on a dynamodb
+table to act as a lock so this is an update of that approach.
+
 As a simplification, we assumes AWS is accessed via the default profile
 in your AWS configuration. Also I've frozen the region to eu-west-2 (London) -
 normally this would be a parameter set somewhere.
@@ -24,7 +27,9 @@ to add a random number to the bucket name.
 
 As said in the original...
 
-There is a certain amount of "chicken and egg" going on here. We want to store the state centrally but we can only do so once the bucket and lock have been created, and can only do that once this has run! The approach is thus:
+There is a certain amount of "chicken and egg" going on here. We want to store the state
+centrally but we can only do so once the bucket and lock have been created, and can only
+do that once this has run! The approach is thus:
 
 - Run terraform init, plan and apply as normal.
 - Record the output (need in further networking configs that will use s3 backend)
@@ -35,9 +40,9 @@ There is a certain amount of "chicken and egg" going on here. We want to store t
 
 (substituting S3_BUCKET with the output recorded above).
 
-From this point, the state data will be in S3. Note there is an argument for adding all those config variables to backend.tf so they are consistent. Also .terraform.lock.hcl should probably be added to git for real, where we want to maintain the setup. In this situation, where the instructions are intended to work from clean, this has been skipped.
+From this point, the state data will be in S3. Note there is an argument for adding all those config variables to backend.tf so they are consistent. Also .terraform.lock.hcl should probably be added to git for real, were we wanted to maintain the setup. In this situation, where the instructions are intended to work from clean, this has been skipped.
 
 These resources, in particular the S3 bucket, should not be destroyed. Thus "force_destroy" is set to false.
 
-(The latter point is true until we try and destroy the whole)
+(The latter point is true until we try and destroy the whole. Then just comment that setting out.)
 
