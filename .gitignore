@@ -1,0 +1,6 @@
+# Files related to bootstrap activity
+cluster-remote-state/backend.tf
+cluster-remote-state/.terraform*
+cluster-remote-state/terraform.tfstate*
+
+**/plan.out
