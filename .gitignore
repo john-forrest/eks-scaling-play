@@ -1,0 +1,7 @@
+# Files related to bootstrap activity
+bootstrap_state/backend.tf
+bootstrap_state/.terraform*
+bootstrap_state/terraform.tfstate*
+
+
+
