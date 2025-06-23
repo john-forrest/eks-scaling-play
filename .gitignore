@@ -4,3 +4,5 @@ cluster-remote-state/.terraform*
 cluster-remote-state/terraform.tfstate*
 
 **/plan.out
+**/.terraform
+
