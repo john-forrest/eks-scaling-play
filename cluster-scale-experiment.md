@@ -83,8 +83,8 @@ and "eksctl create nodegroup" steps above. It ought to be possible to do this in
 stage using terraform, but the assumption is that the cluster might be created by
 a different team than wants to setup the nodes for the application, who may have different
 access rights. For this reason, each will have its own independent terraform state -
-in a proper scenario, that would have differing access rights but not bothering with
-that bit here.
+in a proper scenario, that would probably have differing access rights but not bothering
+with that bit here.
 
 The initial requirement for both is to setup some terraform state environments. Having
 said the above, to simplify things I will use a single s3 bucket to hold the state of
@@ -92,3 +92,20 @@ both cluster and node group, but with different keys - just to make things easie
 Setting up the first remote state environment is always slightly tricky. See
 [cluster-remote-state](cluster-remote-state/Readme.md) for how it is done.
 
+To setup the environment, go into each of these directories in turn and run through
+the operations in the associated Readme.md file:
+1. cluster-remote-state
+2. fargate-cluster
+3. setup-autoscale-for-terraform
+3. managed-node-group
+
+Once that is done, carry on from "helm repo add autoscaler..." above, but with
+variations:
+
+    helm repo add autoscaler https://kubernetes.github.io/autoscaler
+    helm upgrade --install autosc-release autoscaler/cluster-autoscaler \
+        --namespace kube-system \
+        --set 'autoDiscovery.clusterName=MY_CLUSTER' \
+        --set awsRegion=eu-west-2
+
+At the end, reverse through the above directories in reverse order doing "terraform destroy".

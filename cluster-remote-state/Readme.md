@@ -33,16 +33,23 @@ do that once this has run! The approach is thus:
 
 - Run terraform init, plan and apply as normal.
 - Record the output (need in further networking configs that will use s3 backend)
-- Rename/copy backend.tf.forlater to backend.tf
+- Rename/copy backend.tf.forlater to backend.tf (backend.tf does not initially exist)
 - Run:
 
         terraform init -backend-config="bucket=S3_BUCKET" -backend-config="region=eu-west-2" -backend-config="use_lockfile=true"
 
-(substituting S3_BUCKET with the output recorded above).
+(substituting S3_BUCKET with the output recorded above) - answer yes to copy previous
+locally held state to the bucket itself.
 
 From this point, the state data will be in S3. Note there is an argument for adding all those config variables to backend.tf so they are consistent. Also .terraform.lock.hcl should probably be added to git for real, were we wanted to maintain the setup. In this situation, where the instructions are intended to work from clean, this has been skipped.
 
 These resources, in particular the S3 bucket, should not be destroyed. Thus "force_destroy" is set to false.
 
 (The latter point is true until we try and destroy the whole. Then just comment that setting out.)
+
+Note that:
+
+    terraform output --raw s3_bucket
+
+will show the bucket name. This is used below, but you can return to here and recall if you forget.
 

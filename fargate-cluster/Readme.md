@@ -17,3 +17,11 @@ To use run:
     terraform init -backend-config="bucket=S3_BUCKET" -backend-config="region=eu-west-2" -backend-config="use_lockfile=true"
 (substituting S3_BUCKET with the value from cluster-remote-state).
 
+Then normal "plan" and "apply" steps.
+
+Note that 
+
+    terraform output --raw cluster_name
+
+will show the cluster name generated (used below). Default is "ex-fargate-cluster".
+

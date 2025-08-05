@@ -10,8 +10,3 @@ variable "k8s_version" {
   description = "Version of kubernetes to use for cluster"
 }
 
-variable "nodegroup_type" {
-  type        = string
-  default     = "t3.micro"
-  description = "EC2 type for created nodegroup"
-}

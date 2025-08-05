@@ -6,3 +6,4 @@ cluster-remote-state/terraform.tfstate*
 **/plan.out
 **/.terraform
 
+managed-node-group/terraform.tfvars

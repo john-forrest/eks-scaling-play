@@ -5,10 +5,9 @@ provider "aws" {
 data "aws_availability_zones" "available" {}
 
 locals {
-  name            = "ex-${replace(basename(path.cwd), "_", "-")}"
-  cluster_version = var.k8s_version
-  region          = var.region
-
+  name               = "ex-${replace(basename(path.cwd), "_", "-")}"
+  kubernetes_version = var.k8s_version
+  region             = var.region
 
   vpc_cidr = "10.0.0.0/16"
   azs      = slice(data.aws_availability_zones.available.names, 0, 3)
@@ -26,13 +25,13 @@ locals {
 
 module "eks" {
   source          = "terraform-aws-modules/eks/aws"
-  version         = "19.21.0"
+  version         = "21.0.7"
 
-  cluster_name                   = local.name
-  cluster_version                = local.cluster_version
-  cluster_endpoint_public_access = true
+  name                   = local.name
+  kubernetes_version     = local.kubernetes_version
+  endpoint_public_access = true
 
-  cluster_addons = {
+  addons = {
     kube-proxy = {}
     vpc-cni    = {}
     coredns = {
@@ -47,14 +46,10 @@ module "eks" {
   control_plane_subnet_ids = module.vpc.intra_subnets
 
   # Fargate profiles use the cluster primary security group so these are not utilized
-  create_cluster_security_group = false
-  create_node_security_group    = false
+  create_security_group      = false
+  create_node_security_group = false
 
-  fargate_profile_defaults = {
-    iam_role_additional_policies = {
-      additional = aws_iam_policy.additional.arn
-    }
-  }
+  enable_cluster_creator_admin_permissions = true
 
   fargate_profiles = merge(
     {
@@ -86,6 +81,10 @@ module "eks" {
           create = "20m"
           delete = "20m"
         }
+
+        iam_role_additional_policies = {
+          additional = aws_iam_policy.additional.arn
+        }
       }
     },
     { for i in range(3) :
@@ -95,6 +94,10 @@ module "eks" {
         ]
         # We want to create a profile per AZ for high availability
         subnet_ids = [element(module.vpc.private_subnets, i)]
+
+        iam_role_additional_policies = {
+          additional = aws_iam_policy.additional.arn
+        }
       }
     }
   )
@@ -108,7 +111,7 @@ module "eks" {
 
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
-  version = "~> 4.0"
+  version = "~>6.0"
 
   name = local.name
   cidr = local.vpc_cidr
