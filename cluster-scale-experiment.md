@@ -96,16 +96,10 @@ To setup the environment, go into each of these directories in turn and run thro
 the operations in the associated Readme.md file:
 1. cluster-remote-state
 2. fargate-cluster
-3. setup-autoscale-for-terraform
 3. managed-node-group
+4. setup-autoscale-for-terraform
 
-Once that is done, carry on from "helm repo add autoscaler..." above, but with
-variations:
+Once that is done, carry on after "helm repo add autoscaler..." above.
 
-    helm repo add autoscaler https://kubernetes.github.io/autoscaler
-    helm upgrade --install autosc-release autoscaler/cluster-autoscaler \
-        --namespace kube-system \
-        --set 'autoDiscovery.clusterName=MY_CLUSTER' \
-        --set awsRegion=eu-west-2
-
-At the end, reverse through the above directories in reverse order doing "terraform destroy".
+At the end, reverse through the above directories in reverse order doing "terraform destroy",
+excepting setup-audoscale-for-terraform which requires "helm uninstall"

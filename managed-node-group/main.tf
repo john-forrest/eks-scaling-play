@@ -90,28 +90,116 @@ module "eks_managed_node_group" {
   }
 }
 
-#data "aws_autoscaling_group" "eks_managed_node_group" {
-#  for_each = module.eks_managed_node_group.node_group_autoscaling_group_names
-#  name = each.value
+# Need to create an IAM role for the autoscaler - see
+# https://github.com/kubernetes/autoscaler/blob/master/cluster-autoscaler/cloudprovider/aws/README.md#iam-policy
+# Recommended:
+#{
+#  "Version": "2012-10-17",
+#  "Statement": [
+#    {
+#      "Effect": "Allow",
+#      "Action": [
+#        "autoscaling:DescribeAutoScalingGroups",
+#        "autoscaling:DescribeAutoScalingInstances",
+#        "autoscaling:DescribeLaunchConfigurations",
+#        "autoscaling:DescribeScalingActivities",
+#        "ec2:DescribeImages",
+#        "ec2:DescribeInstanceTypes",
+#        "ec2:DescribeLaunchTemplateVersions",
+#        "ec2:GetInstanceTypesFromInstanceRequirements",
+#        "eks:DescribeNodegroup"
+#      ],
+#      "Resource": ["*"]
+#    },
+#    {
+#      "Effect": "Allow",
+#      "Action": [
+#        "autoscaling:SetDesiredCapacity",
+#        "autoscaling:TerminateInstanceInAutoScalingGroup"
+#      ],
+#      "Resource": ["*"]
+#    }
+#  ]
 #}
 #
-#resource "aws_autoscaling_group_tag" "eks_managed_node_group" {
-#  for_each = flatten([
-#    for autoscaling_group_name in module.eks_managed_node_group.node_group_autoscaling_group_names : [
-#      for app_label_key, app_label_value in local.app_labels : {
-#        autoscaling_group_name = autoscaling_group_name
-#        key = app_label_key
-#        value = app_label_value
-#      }
-#    ]
-#  ])
+
+#keep these now for reference
+#data "aws_caller_identity" "current" {}
 #
-# autoscaling_group_name = each.value.autoscaling_group_name
-#
-#  tag {
-#    key   = each.value.key
-#    value = each.value.value
-#
-#    propagate_at_launch = false
-#  }
+#data "aws_iam_openid_connect_provider" "this" {
+#  url = data.aws_eks_cluster.my_cluster.identity[0].oidc[0].issuer
 #}
+
+data "aws_iam_policy_document" "describe_scaling_groups" {
+  statement {
+    actions   = [
+      "autoscaling:DescribeAutoScalingGroups",
+      "autoscaling:DescribeAutoScalingInstances",
+      "autoscaling:DescribeLaunchConfigurations",
+      "autoscaling:DescribeScalingActivities",
+      "ec2:DescribeImages",
+      "ec2:DescribeInstanceTypes",
+      "ec2:DescribeLaunchTemplateVersions",
+      "ec2:GetInstanceTypesFromInstanceRequirements",
+      "eks:DescribeNodegroup"
+    ]
+    effect    = "Allow"
+    resources =  ["*"]
+  }
+}
+
+resource "aws_iam_policy" "describe_scaling_groups" {
+  name  = "tf_autoscale-describe_scaling_groups"
+  description = "First policy in autoscale instructions"
+
+  policy = data.aws_iam_policy_document.describe_scaling_groups.json
+}
+
+data "aws_iam_policy_document" "control_capacity" {
+  statement {
+    actions   = [
+      "autoscaling:SetDesiredCapacity",
+      "autoscaling:TerminateInstanceInAutoScalingGroup"
+    ]
+    effect    = "Allow"
+    resources =  ["*"]
+  }
+}
+
+resource "aws_iam_policy" "control_capacity" {
+  name  = "tf_autoscale-control_capacity"
+  description = "Second policy in autoscale instructions"
+
+  policy = data.aws_iam_policy_document.control_capacity.json
+}
+
+resource "aws_iam_role" "tf_autoscale_role" {
+  name = "tf_autoscale_role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = [
+          "sts:AssumeRole",
+          "sts:TagSession"
+        ]
+        Effect = "Allow"
+        Principal = {
+          Service = "eks.amazonaws.com"
+        }
+      },
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "describe_scaling_groups" {
+  policy_arn = aws_iam_policy.describe_scaling_groups.arn
+  role       = aws_iam_role.tf_autoscale_role.name
+}
+
+resource "aws_iam_role_policy_attachment" "control_capacity" {
+  policy_arn = aws_iam_policy.control_capacity.arn
+  role       = aws_iam_role.tf_autoscale_role.name
+}
+

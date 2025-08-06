@@ -22,3 +22,13 @@ To use run:
 the cluster name generated under fargate-cluster).
 
 Then apply as usual.
+
+At the end:
+
+    terraform output --raw autoscaler_role_arn
+
+shows the IAM role we've created - used below.
+
+Note:
+- The iam_role creation has been added here for convenience.
+Arguably it should be in a separate terraform "module".
