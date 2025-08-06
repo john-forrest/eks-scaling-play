@@ -10,18 +10,6 @@ locals {
     "k8s.io/cluster-autoscaler/${var.cluster_name}"             = "true"
     "k8s.io/cluster-autoscaler/node-template/label/application" = "nginx"
   }
-
-  autoscaling_group_names = module.eks_managed_node_group.node_group_autoscaling_group_names
-
-  mixed_labels = flatten([
-    for autoscaling_group_name in local.autoscaling_group_names : [
-      for app_label_key, app_label_value in local.app_labels : {
-        autoscaling_group_name = autoscaling_group_name
-        key = app_label_key
-        value = app_label_value
-      }
-    ]
-  ])
 }
 
 # Identify cluster subnets so we can create a fargate pool below
@@ -83,9 +71,6 @@ module "eks_managed_node_group" {
     GithubRepo  = "terraform-aws-eks"
     GithubOrg   = "terraform-aws-modules"
     application = "nginx"
-    "k8s.io/cluster-autoscaler/enabled" = "true"
-    "k8s.io/cluster-autoscaler/${var.cluster_name}" = "true"
-    "k8s.io/cluster-autoscaler/node-template/label/application" = "nginx"
   }
 
   taints = {
@@ -99,23 +84,34 @@ module "eks_managed_node_group" {
   tags = {
     Environment = "dev"
     Terraform   = "true"
+    "k8s.io/cluster-autoscaler/enabled"                         = "true"
+    "k8s.io/cluster-autoscaler/${var.cluster_name}"             = "true"
+    "k8s.io/cluster-autoscaler/node-template/label/application" = "nginx"
   }
 }
 
-data "aws_autoscaling_group" "eks_managed_node_group" {
-  for_each = local.autoscaling_group_names
-  name = each.value
-}
-
-resource "aws_autoscaling_group_tag" "eks_managed_node_group" {
-  for_each = local.mixed_labels
-
-  autoscaling_group_name = each.value.autoscaling_group_name
-
-  tag {
-    key   = each.value.key
-    value = each.value.value
-
-    propagate_at_launch = false
-  }
-}
+#data "aws_autoscaling_group" "eks_managed_node_group" {
+#  for_each = module.eks_managed_node_group.node_group_autoscaling_group_names
+#  name = each.value
+#}
+#
+#resource "aws_autoscaling_group_tag" "eks_managed_node_group" {
+#  for_each = flatten([
+#    for autoscaling_group_name in module.eks_managed_node_group.node_group_autoscaling_group_names : [
+#      for app_label_key, app_label_value in local.app_labels : {
+#        autoscaling_group_name = autoscaling_group_name
+#        key = app_label_key
+#        value = app_label_value
+#      }
+#    ]
+#  ])
+#
+# autoscaling_group_name = each.value.autoscaling_group_name
+#
+#  tag {
+#    key   = each.value.key
+#    value = each.value.value
+#
+#    propagate_at_launch = false
+#  }
+#}
