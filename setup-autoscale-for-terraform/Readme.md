@@ -2,9 +2,9 @@
 # Setup Autoscaler
 
 We are going to still use helm to setup the autoscaler since it ties to
-the kubernetes requirements. The alternative might be to use resource
+the kubernetes requirements. (The alternative might be to use resource
 aws_autoscaling_group but that is seemingly intended for traditional,
-non-k8s uses.
+non-k8s uses.)
 
 Run:
 
@@ -25,11 +25,16 @@ For IMAGE_TAG it is necessary to do some detective work. Look
 on the [releases](https://github.com/kubernetes/autoscaler/releases)
 page for the github repo. Look for the latest one that corresponds
 to the version of kubernetes used in the cluster - e.g. for
-1.31 we look for the latest 1.31.x. Use that.
+1.31 we look for the latest v1.31.x. Use that.
 
 Warning:
 - Because this is added to the kube-system namespace, other helm commands
 need to quote that, thus:
 
         helm get values autosc-release --namespace=kube-system
+
+At end, the uninstall operation seimilarly looks like:
+
+        helm uninstall autosc-release --namespace=kube-system
+
 

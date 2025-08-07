@@ -53,3 +53,16 @@ Note that:
 
 will show the bucket name. This is used below, but you can return to here and recall if you forget.
 
+## Destroy instructions
+
+Deleting this cluster is not easy - deliberately so since deleting this destroys all the
+data for the other terraform layers.
+
+Steps:
+1. In main.tf, change prevent_destroy from true to false, and force_destroy from false to true.
+2. Rename backup.tf backup.tf.kp (or anything else)
+3. "terraform init --migrate-state"
+4. Re-run terraform plan and apply
+5. terraform destroy
+
+

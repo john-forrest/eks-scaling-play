@@ -10,6 +10,8 @@ locals {
     "k8s.io/cluster-autoscaler/${var.cluster_name}"             = "true"
     "k8s.io/cluster-autoscaler/node-template/label/application" = "nginx"
   }
+
+  role_name_prefix = "cluster-autoscaler"
 }
 
 # Identify cluster subnets so we can create a fargate pool below
@@ -126,80 +128,30 @@ module "eks_managed_node_group" {
 #keep these now for reference
 #data "aws_caller_identity" "current" {}
 #
-#data "aws_iam_openid_connect_provider" "this" {
-#  url = data.aws_eks_cluster.my_cluster.identity[0].oidc[0].issuer
-#}
 
-data "aws_iam_policy_document" "describe_scaling_groups" {
-  statement {
-    actions   = [
-      "autoscaling:DescribeAutoScalingGroups",
-      "autoscaling:DescribeAutoScalingInstances",
-      "autoscaling:DescribeLaunchConfigurations",
-      "autoscaling:DescribeScalingActivities",
-      "ec2:DescribeImages",
-      "ec2:DescribeInstanceTypes",
-      "ec2:DescribeLaunchTemplateVersions",
-      "ec2:GetInstanceTypesFromInstanceRequirements",
-      "eks:DescribeNodegroup"
-    ]
-    effect    = "Allow"
-    resources =  ["*"]
+data "aws_iam_openid_connect_provider" "this" {
+  url = data.aws_eks_cluster.my_cluster.identity[0].oidc[0].issuer
+}
+
+module "cluster_autoscaler_irsa" {
+  source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
+  version = "~> 5.59"
+
+  role_name_prefix = local.role_name_prefix
+  role_description = "IRSA role for cluster autoscaler"
+
+  attach_cluster_autoscaler_policy = true
+  cluster_autoscaler_cluster_ids   = [var.cluster_name]
+
+  oidc_providers = {
+    main = {
+      provider_arn               = data.aws_iam_openid_connect_provider.this.arn
+      namespace_service_accounts = ["kube-system:cluster-autoscaler-aws"]
+    }
   }
+
+  tags = {
+    Environment = "dev"
+    Terraform   = "true"
+    }
 }
-
-resource "aws_iam_policy" "describe_scaling_groups" {
-  name  = "tf_autoscale-describe_scaling_groups"
-  description = "First policy in autoscale instructions"
-
-  policy = data.aws_iam_policy_document.describe_scaling_groups.json
-}
-
-data "aws_iam_policy_document" "control_capacity" {
-  statement {
-    actions   = [
-      "autoscaling:SetDesiredCapacity",
-      "autoscaling:TerminateInstanceInAutoScalingGroup"
-    ]
-    effect    = "Allow"
-    resources =  ["*"]
-  }
-}
-
-resource "aws_iam_policy" "control_capacity" {
-  name  = "tf_autoscale-control_capacity"
-  description = "Second policy in autoscale instructions"
-
-  policy = data.aws_iam_policy_document.control_capacity.json
-}
-
-resource "aws_iam_role" "tf_autoscale_role" {
-  name = "tf_autoscale_role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = [
-          "sts:AssumeRole",
-          "sts:TagSession"
-        ]
-        Effect = "Allow"
-        Principal = {
-          Service = "eks.amazonaws.com"
-        }
-      },
-    ]
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "describe_scaling_groups" {
-  policy_arn = aws_iam_policy.describe_scaling_groups.arn
-  role       = aws_iam_role.tf_autoscale_role.name
-}
-
-resource "aws_iam_role_policy_attachment" "control_capacity" {
-  policy_arn = aws_iam_policy.control_capacity.arn
-  role       = aws_iam_role.tf_autoscale_role.name
-}
-
