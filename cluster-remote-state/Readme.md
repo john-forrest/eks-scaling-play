@@ -61,7 +61,7 @@ data for the other terraform layers.
 Steps:
 1. In main.tf, change prevent_destroy from true to false, and force_destroy from false to true.
 2. Rename backup.tf backup.tf.kp (or anything else)
-3. "terraform init --migrate-state"
+3. "terraform init --migrate-state" (stop using s3)
 4. Re-run terraform plan and apply
 5. terraform destroy
 

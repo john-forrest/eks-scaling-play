@@ -102,5 +102,5 @@ the operations in the associated Readme.md file:
 Once that is done, carry on after "helm repo add autoscaler..." above.
 
 At the end, reverse through the above directories in reverse order doing "terraform destroy",
-excepting setup-audoscale-for-terraform which requires "helm uninstall" - see its Readme.
-Also remember to delete cluster-remote-state/backend.tf as it will be stale.
+excepting setup-audoscale-for-terraform and cluster-remote-state, for which see their
+readme entries.
