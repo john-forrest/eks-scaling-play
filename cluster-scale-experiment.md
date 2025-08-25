@@ -71,6 +71,14 @@ Afterwards:
 4. Wait 10 min or so
 5. The number of app nodes will also drop to 1
 
+At the end, to tidy up, first delete the helm chart with:
+
+    helm delete autosc-release --namespace kube-system
+
+then to delete the cluster itself:
+
+    eksctl delete cluster eksctl-test
+
 ## Alternative (Terraform)
 
 At my current work, the policy is to setup infrastructure using terraform where possible -
@@ -101,6 +109,6 @@ the operations in the associated Readme.md file:
 
 Once that is done, carry on after "helm repo add autoscaler..." above.
 
-At the end, reverse through the above directories in reverse order doing "terraform destroy",
-excepting setup-audoscale-for-terraform and cluster-remote-state, for which see their
-readme entries.
+At the end, reverse through the above directories in reverse order doing
+"terraform destroy", excepting setup-autoscale-for-terraform and
+cluster-remote-state, for which see their readme entries.
