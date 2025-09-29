@@ -16,7 +16,9 @@ Run:
         --set 'autoDiscovery.clusterName=MY_CLUSTER' \
         --set awsRegion=eu-west-2 \
         --set image.tag=IMAGE_TAG \
-        --set rbac.serviceAccount.annotations."eks\.amazonaws\.com/role-arn"=MY_ROLE
+        --set rbac.serviceAccount.annotations."eks\.amazonaws\.com/role-arn"=MY_ROLE \
+        --set rbac.serviceAccount.serviceAccount.name=autoscaler-service-account \
+        --set rbac.serviceAccount.serviceAccount.create=true
     (where MY_CLUSTER is the name of the cluster from above,
      for IMAGE_TAG see below,
      and MY_ROLE is the iam role from above)

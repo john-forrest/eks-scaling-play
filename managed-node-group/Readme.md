@@ -15,11 +15,16 @@ eksctl.
 
 To use run:
 
-    echo "cluster_name = \"MY_CLUSTER\" > tfvars.tf
+    echo "cluster_name = \"MY_CLUSTER\"" > tfvars.tfvars
+    echo "oidc_provider = \"OIDC_PROVIDER\"" >> tfvars.tfvars
+(substituting MY_CLUSTER to the cluster name generated under fargate-cluster,
+and OIDC_PROVIDER is the oidc provider setting also generated there)
+
+and then:
+
     terraform init -backend-config="bucket=S3_BUCKET" -backend-config="region=eu-west-2" -backend-config="use_lockfile=true"
-    terraform plan -out plan.out -var-file terraform.tfvars
-(substituting S3_BUCKET with the value from cluster-remote-state, and MY_CLUSTER to
-the cluster name generated under fargate-cluster).
+    terraform plan -out plan.out -var-file tfvars.tfvars
+(substituting S3_BUCKET with the value from cluster-remote-state).
 
 Then apply as usual.
 
@@ -32,3 +37,11 @@ shows the IAM role we've created - used below.
 Note:
 - The iam_role creation has been added here for convenience.
 Arguably it should be in a separate terraform "module".
+
+### Destryction
+
+At end:
+
+    terraform destroy -var-file=tfvars.tfvars
+
+

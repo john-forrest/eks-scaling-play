@@ -20,3 +20,20 @@ variable "nodegroup_type" {
   default     = "t3.micro"
   description = "EC2 type for created nodegroup"
 }
+
+variable "oidc_provider" {
+  type        = string
+  description = "oidc provider for cluster"
+}
+
+variable "autoscaler_namespace" {
+  type        = string
+  description = "namespace we add autoscaler to"
+  default     = "kube-system"
+}
+
+variable "service_account" {
+  type        = string
+  description = "name of account for autoscalers - must agree with params to helm but note prefix automatically added"
+  default     = "autosc-release-aws-cluster-autoscaler"
+}

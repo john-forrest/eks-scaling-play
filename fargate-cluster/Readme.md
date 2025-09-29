@@ -23,5 +23,9 @@ Note that
 
     terraform output --raw cluster_name
 
-will show the cluster name generated (used below). Default is "ex-fargate-cluster".
+will show the cluster name generated (used below). Default is "ex-fargate-cluster". Also:
+
+    terraform output --raw oidc_provider
+
+is required further on.
 

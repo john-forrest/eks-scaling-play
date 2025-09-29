@@ -64,7 +64,7 @@ module "eks_managed_node_group" {
   max_size     = 10
   desired_size = 1
 
-  instance_types = ["t3.micro"]
+  instance_types = [var.nodegroup_type]
   capacity_type  = "SPOT"
   use_custom_launch_template = false
 
@@ -78,7 +78,7 @@ module "eks_managed_node_group" {
   taints = {
     dedicated = {
       key    = "dedicated"
-      value  = "gpuGroup"
+      value  = "appGroup"
       effect = "NO_SCHEDULE"
     }
   }
@@ -125,33 +125,106 @@ module "eks_managed_node_group" {
 #}
 #
 
-#keep these now for reference
-#data "aws_caller_identity" "current" {}
+data "aws_caller_identity" "current" {}
+
+#data "aws_iam_openid_connect_provider" "this" {
+#  url = data.aws_eks_cluster.my_cluster.identity[0].oidc[0].issuer
+#}
+
+#module "cluster_autoscaler_irsa" {
+#  source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
+#  version = "~> 5.59"
 #
+#  role_name_prefix = local.role_name_prefix
+#  role_description = "IRSA role for cluster autoscaler"
+#
+#  attach_cluster_autoscaler_policy = true
+#  cluster_autoscaler_cluster_ids   = [var.cluster_name]
+#
+#  oidc_providers = {
+#    main = {
+#      provider_arn               = data.aws_iam_openid_connect_provider.this.arn
+#      namespace_service_accounts = ["kube-system:cluster-autoscaler-aws"]
+#    }
+#  }
+#
+#  tags = {
+#    Environment = "dev"
+#    Terraform   = "true"
+#    }
+#}
 
-data "aws_iam_openid_connect_provider" "this" {
-  url = data.aws_eks_cluster.my_cluster.identity[0].oidc[0].issuer
+resource "aws_iam_role" "autoscaler_role" {
+  name = "${terraform.workspace}-autoscaler-role"
+
+  assume_role_policy = jsonencode({
+    Statement = [{
+      "Effect": "Allow",
+      "Principal": {
+        "Federated": "arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/${var.oidc_provider}"
+      },
+      "Action": "sts:AssumeRoleWithWebIdentity",
+      "Condition": {
+        "StringEquals": {
+          "${var.oidc_provider}:aud": "sts.amazonaws.com",
+          "${var.oidc_provider}:sub": "system:serviceaccount:${var.autoscaler_namespace}:${var.service_account}"
+        }
+      }
+    }]
+    Version = "2012-10-17"
+  })
 }
 
-module "cluster_autoscaler_irsa" {
-  source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
-  version = "~> 5.59"
-
-  role_name_prefix = local.role_name_prefix
-  role_description = "IRSA role for cluster autoscaler"
-
-  attach_cluster_autoscaler_policy = true
-  cluster_autoscaler_cluster_ids   = [var.cluster_name]
-
-  oidc_providers = {
-    main = {
-      provider_arn               = data.aws_iam_openid_connect_provider.this.arn
-      namespace_service_accounts = ["kube-system:cluster-autoscaler-aws"]
-    }
+data "aws_iam_policy_document" "autoscaler_policy1" {
+  statement {
+    actions   = [
+      "autoscaling:DescribeAutoScalingGroups",
+      "autoscaling:DescribeAutoScalingInstances",
+      "autoscaling:DescribeLaunchConfigurations",
+      "autoscaling:DescribeScalingActivities",
+      "ec2:DescribeImages",
+      "ec2:DescribeInstanceTypes",
+      "ec2:DescribeLaunchTemplateVersions",
+      "ec2:GetInstanceTypesFromInstanceRequirements",
+      "eks:DescribeNodegroup"
+    ]
+    effect    = "Allow"
+    resources =  ["*"]
   }
-
-  tags = {
-    Environment = "dev"
-    Terraform   = "true"
-    }
 }
+
+resource "aws_iam_policy" "autoscaler_policy1" {
+  name  = "autoscaler_policy1"
+  description = "First group of required autoscaler policy settings"
+
+  policy = data.aws_iam_policy_document.autoscaler_policy1.json
+}
+
+resource "aws_iam_role_policy_attachment" "autoscaler_policy1" {
+  policy_arn = aws_iam_policy.autoscaler_policy1.arn
+  role       = aws_iam_role.autoscaler_role.name
+}
+
+data "aws_iam_policy_document" "autoscaler_policy2" {
+  statement {
+    actions   = [
+      "autoscaling:SetDesiredCapacity",
+      "autoscaling:TerminateInstanceInAutoScalingGroup"
+    ]
+    effect    = "Allow"
+    resources =  ["*"]
+  }
+}
+
+resource "aws_iam_policy" "autoscaler_policy2" {
+  name  = "autoscaler_policy2"
+  description = "Second group of required autoscaler policy settings"
+
+  policy = data.aws_iam_policy_document.autoscaler_policy2.json
+}
+
+resource "aws_iam_role_policy_attachment" "autoscaler_policy2" {
+  policy_arn = aws_iam_policy.autoscaler_policy2.arn
+  role       = aws_iam_role.autoscaler_role.name
+}
+

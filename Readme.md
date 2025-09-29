@@ -41,7 +41,10 @@ Note --asg-access required to run autoscaler on ng-default)
         --set 'autoDiscovery.clusterName=eksctl-test' \
         --set awsRegion=eu-west-2
 
-kubectl apply -f hpa-php-apache.yaml
+Now:
+
+    kubectl apply -f hpa-php-apache.yaml
+
 (when we did orig, just with toleration and not affinity, it ran the first pod on ng-default.
 Added affinity at which point it said it did not have a valid node to run on. Ended up disabling
 taing on the nodegroup)
@@ -87,12 +90,14 @@ additional requirement is to use terraform instead of ekctl in the above.
 
 I am going to add an additional requirement that the terraform is split into two parts:
 "cluster" and "node group". These basically correspond to the "eksctl create cluster"
-and "eksctl create nodegroup" steps above. It ought to be possible to do this in one
+and "eksctl create nodegroup" steps above - although we setup IAM for the autoscaler
+in the "node group" stage. It ought to be possible to do this in one
 stage using terraform, but the assumption is that the cluster might be created by
 a different team than wants to setup the nodes for the application, who may have different
-access rights. For this reason, each will have its own independent terraform state -
-in a proper scenario, that would probably have differing access rights but not bothering
-with that bit here.
+access rights. Also there is an issue getting hold of the oidc_provider from inside
+terraform - even for a cluster terraform has created itself. For this reason, each will
+have its own independent terraform state - in a proper scenario, that would probably
+have differing access rights but not bothering with that bit here.
 
 The initial requirement for both is to setup some terraform state environments. Having
 said the above, to simplify things I will use a single s3 bucket to hold the state of
@@ -107,7 +112,17 @@ the operations in the associated Readme.md file:
 3. managed-node-group
 4. setup-autoscale-for-terraform
 
-Once that is done, carry on after "helm repo add autoscaler..." above.
+Additionally we need to run (to get metrics-server):
+
+    kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+
+Slight mod to the above then, to run the deployment we run:
+
+    kubectl apply -f hpa-php-apache-tf.yaml
+
+this is a slightly different config file that uses tolerations to match the taints
+defined in the managed-group-node setup - this is what the main version should
+probably have looked like anyway.
 
 At the end, reverse through the above directories in reverse order doing
 "terraform destroy", excepting setup-autoscale-for-terraform and
